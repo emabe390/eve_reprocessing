@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="google.ortools.win32.x86.64" type="repository">
+    <properties maven-id="com.google.ortools:ortools-win32-x86-64:9.14.6206" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-win32-x86-64/9.14.6206/ortools-win32-x86-64-9.14.6206.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

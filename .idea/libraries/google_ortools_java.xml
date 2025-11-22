@@ -1,0 +1,18 @@
+<component name="libraryTable">
+  <library name="google.ortools.java" type="repository">
+    <properties maven-id="com.google.ortools:ortools-java:9.14.6206" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-java/9.14.6206/ortools-java-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-linux-x86-64/9.14.6206/ortools-linux-x86-64-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-darwin-x86-64/9.14.6206/ortools-darwin-x86-64-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-win32-x86-64/9.14.6206/ortools-win32-x86-64-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-linux-aarch64/9.14.6206/ortools-linux-aarch64-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/ortools/ortools-darwin-aarch64/9.14.6206/ortools-darwin-aarch64-9.14.6206.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna-platform/5.14.0/jna-platform-5.14.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/google/protobuf/protobuf-java/4.31.1/protobuf-java-4.31.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
