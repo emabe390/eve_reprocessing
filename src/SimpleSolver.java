@@ -5,6 +5,7 @@ public class SimpleSolver {
     static void main() throws Exception {
         Cache.initialize();
         try {
+            // this is the list of resources you care about
             List<Integer> resources = new ArrayList<>();
             resources.add(34);
             resources.add(35);
@@ -13,7 +14,7 @@ public class SimpleSolver {
             resources.add(38);
             resources.add(39);
             resources.add(40);
-            new SimpleSolver().solve(resources, 0.5f, 300);
+            new SimpleSolver().solve(resources, 0.5f, 450);
         } finally {
             Cache.close();
         }
@@ -24,6 +25,7 @@ public class SimpleSolver {
         if (apiResponse.buyOrders == 0) return 0;
         if (apiResponse.sellOrders == 0) return 0;
         if (apiResponse.buyVolume < 100) return 0;
+        if (apiResponse.sellVolume < 100) return 0;
         return apiResponse.sellAvgFivePercent;
     }
 
