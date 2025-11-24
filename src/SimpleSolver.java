@@ -29,7 +29,7 @@ public class SimpleSolver {
         return apiResponse.sellAvgFivePercent;
     }
 
-    public void solve(List<Integer> resources, float reprocessing, float costPerM3) throws Exception {
+    public List<String> solve(List<Integer> resources, float reprocessing, float costPerM3) throws Exception {
         List<String> headers = new ArrayList<>();
         headers.add("Item");
         List<String> rowName = new ArrayList<>();
@@ -85,27 +85,30 @@ public class SimpleSolver {
             Debug.print("Post hauling: " + sumReprocessed);
 
             if (sumReprocessed > itemPrice) {
-                results.put(sumReprocessed-itemPrice, Cache.getItemName(itemId));
+                results.put(sumReprocessed - itemPrice, Cache.getItemName(itemId));
                 //System.out.println(Cache.getItemName(itemId) + "," + (sumReprocessed - itemPrice));
             }
         }
 
-        System.out.println("+ Reprocess " + LocalDate.now());
-        int len =(int) Math.floor(Math.log(results.keySet().stream().sorted().toList().getLast()))/2;
+        List<String> res = new ArrayList<>();
+
+        res.add("+ Reprocess " + LocalDate.now() + "\n");
+        int len = (int) Math.floor(Math.log(results.keySet().stream().sorted().toList().getLast())) / 2;
         boolean first = true;
-        int lastBlock=0;
+        int lastBlock = 0;
         int blockSize = 10000;
         for (Double key : results.keySet().stream().sorted().toList()) {
-            if ((int) (key / blockSize) > lastBlock ) {
-                lastBlock = (int)(key/blockSize);
-                System.out.printf("++ %0" + len + "d-%0" + len + "d%n", lastBlock*blockSize, ((lastBlock+1)*blockSize-1));
+            if ((int) (key / blockSize) > lastBlock) {
+                lastBlock = (int) (key / blockSize);
+                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", lastBlock * blockSize, ((lastBlock + 1) * blockSize - 1)));
             }
             if (lastBlock == 0 && first) {
                 first = false;
-                System.out.printf("++ %0" + len + "d-%0" + len + "d%n", 0, blockSize-1);
+                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", 0, blockSize - 1));
             }
 
-            System.out.println("-- " + results.get(key));
+            res.add("-- " + results.get(key) + "\n");
         }
+        return res;
     }
 }
