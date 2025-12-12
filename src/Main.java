@@ -8,5 +8,5 @@ void main() throws Exception {
     System.out.println(Cache.marketValue(34).buyAvgFivePercent);
     System.out.println(Cache.marketValue(34).buyAvgFivePercent);
     System.out.println(Cache.marketValue(34).buyAvgFivePercent);
-    Cache.close();
+    Cache.save();
 }

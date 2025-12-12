@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -65,7 +64,7 @@ public class Cache {
         }
     }
 
-    public static void close() throws Exception {
+    public static void save() throws Exception {
         storeCacheEntries();
     }
 

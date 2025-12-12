@@ -2,6 +2,62 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class SimpleSolver {
+    interface PriceCalculator {
+        double calculate(Cache.APIResponse response);
+
+        static PriceCalculator BUY() {
+            return new PriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.buyAvgFivePercent;
+                }
+            };
+        }
+
+        static PriceCalculator MAX_BUY() {
+            return new PriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.maxBuy;
+                }
+            };
+        }
+
+        static PriceCalculator SELL() {
+            return new PriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.sellAvgFivePercent;
+                }
+            };
+        }
+
+        static PriceCalculator MIN_SELL() {
+            return new PriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.minSell;
+                }
+            };
+        }
+    }
+
     static void main() throws Exception {
         Cache.initialize();
         try {
@@ -14,22 +70,17 @@ public class SimpleSolver {
             resources.add(38);
             resources.add(39);
             resources.add(40);
-            new SimpleSolver().solve(resources, 0.5f, 450);
+            new SimpleSolver().solve(resources, 10000002, 0.5f, 450, PriceCalculator.BUY());
         } finally {
-            Cache.close();
+            Cache.save();
         }
 
     }
 
-    static double apiToPrice(Cache.APIResponse apiResponse) {
-        if (apiResponse.buyOrders == 0) return 0;
-        if (apiResponse.sellOrders == 0) return 0;
-        if (apiResponse.buyVolume < 100) return 0;
-        if (apiResponse.sellVolume < 100) return 0;
-        return apiResponse.sellAvgFivePercent;
-    }
 
-    public List<String> solve(List<Integer> resources, float reprocessing, float costPerM3) throws Exception {
+    public List<String> solve(List<Integer> resources, int system, float reprocessing, float costPerM3, PriceCalculator priceCalculator) throws Exception {
+        System.out.println("system = " + system);
+        boolean calcAll = resources.isEmpty();
         List<String> headers = new ArrayList<>();
         headers.add("Item");
         List<String> rowName = new ArrayList<>();
@@ -44,7 +95,7 @@ public class SimpleSolver {
 
             Double[] priceList = new Double[resources.size()];
             prices.add(priceList);
-            double price = apiToPrice(Cache.marketValue(resource)) + costPerM3 * Cache.idToVolume(resource);
+            double price = priceCalculator.calculate(Cache.marketValue(resource, system)) + costPerM3 * Cache.idToVolume(resource);
             priceList[index] = price;
             resourceToPrice.put(resource, priceList[index]);
 
@@ -53,30 +104,28 @@ public class SimpleSolver {
 
         HashMap<Double, String> results = new HashMap<>();
 
+        int numberOfMats = Cache.getInvTypeMaterials().size();
+        int i = 0;
         for (Map.Entry<Integer, List<Pair<Integer, Double>>> entry : Cache.getInvTypeMaterials().entrySet()) {
+            System.out.println(++i + " / " + numberOfMats);
             Integer itemId = entry.getKey();
             List<Pair<Integer, Double>> val = entry.getValue();
-            /*if (Cache.getItemName(itemId).equals("Nova Torpedo")) {
-                Debug.DEBUG = true;
-            } else {
-                Debug.DEBUG = false;
-            }*/
 
-            double itemPrice = apiToPrice(Cache.marketValue(itemId));
-            if (itemPrice == 0) continue;
-
-            Map<Integer, Double> priceForAllMaterials = new HashMap<>();
             double volumeReprocessed = 0;
             double sumReprocessed = 0;
             for (Pair<Integer, Double> reprocessedResult : val) {
-                if (!resourceToPrice.containsKey(reprocessedResult.first)) continue;
-                double reprocessedValue = apiToPrice(Cache.marketValue(reprocessedResult.first)) * reprocessedResult.second * reprocessing;
-                Debug.print(apiToPrice(Cache.marketValue(reprocessedResult.first)) + " * " + reprocessedResult.second + " * " + reprocessing);
+                if (!resourceToPrice.containsKey(reprocessedResult.first) & !calcAll) continue;
+                double reprocessedValue = priceCalculator.calculate(Cache.marketValue(reprocessedResult.first, system)) * reprocessedResult.second * reprocessing;
+                Debug.print(priceCalculator.calculate(Cache.marketValue(reprocessedResult.first, system)) + " * " + reprocessedResult.second + " * " + reprocessing);
                 Debug.print(Cache.getItemName(reprocessedResult.first) + " : " + reprocessedValue);
-                priceForAllMaterials.put(reprocessedResult.first, reprocessedValue);
                 volumeReprocessed += Cache.idToVolume(reprocessedResult.first) * reprocessedResult.second;
                 sumReprocessed += reprocessedValue;
             }
+
+            if (sumReprocessed == 0) continue; // doesn't reproduce to
+
+            double itemPrice = priceCalculator.calculate(Cache.marketValue(itemId, system));
+            if (itemPrice == 0) continue;
 
             Debug.print(itemId);
             Debug.print("Only item: " + itemPrice);
@@ -91,6 +140,7 @@ public class SimpleSolver {
         }
 
         List<String> res = new ArrayList<>();
+        if (res.isEmpty()) return res;
 
         res.add("+ Reprocess " + LocalDate.now() + "\n");
         int len = (int) Math.floor(Math.log(results.keySet().stream().sorted().toList().getLast())) / 2;

@@ -17,7 +17,7 @@ public class Solver {
         try {
             solve();
         } finally {
-            Cache.close();
+            Cache.save();
         }
     }
 
