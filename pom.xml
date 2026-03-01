@@ -44,10 +44,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>emabe.eve.reprocessing</mainClass>
+                            <mainClass>emabe.eve.reprocessing.GUI</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

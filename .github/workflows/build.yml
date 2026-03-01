@@ -3,39 +3,31 @@ name: Build and Release JAR
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write   # required to create release
+      contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
+          cache: maven
 
-      - name: Compile
-        run: |
-          mkdir -p out
-          find src -name "*.java" > sources.txt
-          javac -d out @sources.txt
+      - name: Build with Maven
+        run: mvn clean package
 
-      - name: Create JAR
-        run: |
-          echo "Main-Class: emabe.eve.reprocessing.GUI" > manifest.txt
-          jar cfm app.jar manifest.txt -C out .
-
-      - name: Create Release
+      - name: Create Release and Upload JAR
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Build ${{ github.run_number }}
-          files: app.jar
+          files: target/*.jar
