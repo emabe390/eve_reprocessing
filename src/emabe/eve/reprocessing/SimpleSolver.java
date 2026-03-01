@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SimpleSolver {
     private static List<String> formatResult(Map<Double, String> results) {
         List<String> res = new ArrayList<>();
-        // if (res.isEmpty()) return res;
 
         res.add("+ Reprocess " + LocalDate.now() + "\n");
         Object[] resultArray = results.keySet().stream().sorted().toArray();
