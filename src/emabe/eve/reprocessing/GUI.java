@@ -1,3 +1,5 @@
+package emabe.eve.reprocessing;
+
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
@@ -22,7 +24,6 @@ public class GUI {
         SYSTEM_MAP.put("Hek", 10000030);
     }
 
-    private JLabel _headerLabel;
     private JTextArea _textArea;
     private JFormattedTextField _costPerM3;
     private JFrame _frame;
@@ -65,7 +66,7 @@ public class GUI {
             sb.append(Cache.getItemName(i)).append("\n");
         }
 
-        _headerLabel = new JLabel("Paste your inputs here:");
+        JLabel _headerLabel = new JLabel("Paste your inputs here:");
         _frame.add(_headerLabel);
         _frame.setResizable(true);
         _textArea = new JTextArea();
@@ -191,7 +192,7 @@ public class GUI {
     }
 
 
-    class MyIntFilter extends DocumentFilter {
+    static class MyIntFilter extends DocumentFilter {
         @Override
         public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
 

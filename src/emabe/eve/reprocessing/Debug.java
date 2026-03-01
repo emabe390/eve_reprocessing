@@ -1,3 +1,5 @@
+package emabe.eve.reprocessing;
+
 public class Debug {
     public static boolean DEBUG = false;
     public static boolean TIMESTAMP = true;

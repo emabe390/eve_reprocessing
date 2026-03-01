@@ -1,28 +1,12 @@
+package emabe.eve.reprocessing;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SimpleSolver {
-    static void main() throws Exception {
-        Cache.initialize();
-        try {
-            // this is the list of resources you care about
-            List<Integer> resources = new ArrayList<>();
-            resources.add(34);
-            resources.add(35);
-            resources.add(36);
-            resources.add(37);
-            resources.add(38);
-            resources.add(39);
-            resources.add(40);
-            new SimpleSolver().solve(resources, 10000002, 0.5f, 450, PriceCalculator.BUY());
-        } finally {
-            Cache.save();
-        }
-
-    }
-
-    private static List<String> formatResult(HashMap<Double, String> results) {
+    private static List<String> formatResult(Map<Double, String> results) {
         List<String> res = new ArrayList<>();
         // if (res.isEmpty()) return res;
 
@@ -32,8 +16,8 @@ public class SimpleSolver {
         boolean first = true;
         int lastBlock = 0;
         int blockSize = 10000;
-        for (Object okey : resultArray) {
-            Double key = (Double) okey;
+        for (Object objectKey : resultArray) {
+            Double key = (Double) objectKey;
             if ((int) (key / blockSize) > lastBlock) {
                 lastBlock = (int) (key / blockSize);
                 res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", lastBlock * blockSize, ((lastBlock + 1) * blockSize - 1)));
@@ -49,22 +33,11 @@ public class SimpleSolver {
     }
 
     private List<Integer> preSolve(List<Integer> resources, int system, float reprocessing, float costPerM3, PriceCalculator priceCalculator) throws IOException {
-        System.out.println("system = " + system);
         boolean calcAll = resources.isEmpty();
-        List<String> headers = new ArrayList<>();
-        headers.add("Item");
-        List<String> rowName = new ArrayList<>();
-        List<Double[]> prices = new ArrayList<>();
-        Map<Integer, Integer> resourceToIndex = new HashMap<>();
         Map<Integer, Double> resourceToPrice = new HashMap<>();
         int index = 0;
         for (int resource : resources) {
-            resourceToIndex.put(resource, index);
-            headers.add(Cache.getItemName(resource));
-            rowName.add(Cache.getItemName(resource));
-
             Double[] priceList = new Double[resources.size()];
-            prices.add(priceList);
             double price = priceCalculator.calculate(Cache.ESImarketValue(resource, system)) + costPerM3 * Cache.idToVolume(resource);
             priceList[index] = price;
             resourceToPrice.put(resource, priceList[index]);
@@ -105,76 +78,88 @@ public class SimpleSolver {
 
             if (sumReprocessed > itemPrice) {
                 results.add(itemId);
-                //System.out.println(Cache.getItemName(itemId) + "," + (sumReprocessed - itemPrice));
+                //System.out.println(emabe.eve.reprocessing.Cache.getItemName(itemId) + "," + (sumReprocessed - itemPrice));
             }
         }
         return results;
     }
 
     public List<String> solve(List<Integer> resources, int system, float reprocessing, float costPerM3, PriceCalculator priceCalculator) throws Exception {
-        System.out.println("system = " + system);
         boolean calcAll = resources.isEmpty();
-        List<String> headers = new ArrayList<>();
-        headers.add("Item");
-        List<String> rowName = new ArrayList<>();
-        List<Double[]> prices = new ArrayList<>();
-        Map<Integer, Integer> resourceToIndex = new HashMap<>();
         Map<Integer, Double> resourceToPrice = new HashMap<>();
         int index = 0;
         for (int resource : resources) {
-            resourceToIndex.put(resource, index);
-            headers.add(Cache.getItemName(resource));
-            rowName.add(Cache.getItemName(resource));
-
             Double[] priceList = new Double[resources.size()];
-            prices.add(priceList);
             double price = priceCalculator.calculate(Cache.ESImarketValue(resource, system)) + costPerM3 * Cache.idToVolume(resource);
             priceList[index] = price;
             resourceToPrice.put(resource, priceList[index]);
-
             index++;
         }
 
-        HashMap<Double, String> results = new HashMap<>();
+        Map<Double, String> results = new ConcurrentHashMap<>();
 
         List<Integer> preFilteredList = preSolve(resources, system, reprocessing, costPerM3, priceCalculator);
 
-        int numberOfMats = preFilteredList.size();
-        int i = 0;
-        for (Integer itemId : preFilteredList) {
-            System.out.println(++i + " / " + numberOfMats);
-            List<Pair<Integer, Double>> val = Cache.getInvTypeMaterials().get(itemId);
+        int threadCount = 20;
+        Thread[] pool = new Thread[threadCount];
 
-            double volumeReprocessed = 0;
-            double sumReprocessed = 0;
-            for (Pair<Integer, Double> reprocessedResult : val) {
-                if (!resourceToPrice.containsKey(reprocessedResult.first()) & !calcAll) continue;
-                double reprocessedValue = priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first(), system)) * reprocessedResult.second() * reprocessing;
-                // Debug.print(priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first, system)) + " * " + reprocessedResult.second + " * " + reprocessing);
-                // Debug.print(Cache.getItemName(reprocessedResult.first) + " : " + reprocessedValue);
-                volumeReprocessed += Cache.idToVolume(reprocessedResult.first()) * reprocessedResult.second();
-                sumReprocessed += reprocessedValue;
-            }
+        int totalCount = preFilteredList.size();
+        int baseSize = totalCount / threadCount;
+        int remainder = totalCount % threadCount;
 
-            if (sumReprocessed == 0) continue; // doesn't reproduce to
+        int start = 0;
 
-            double itemPrice = priceCalculator.calculate(Cache.tycoonMarketValue(itemId, system));
-            if (itemPrice == 0) continue;
+        for (int i = 0; i < threadCount; i++) {
+            int size = baseSize + (i < remainder ? 1 : 0);
+            int end = start + size - 1;
 
-            Debug.print(itemId);
-            Debug.print("Only item: " + itemPrice);
-            Debug.print("Pre hauling: " + sumReprocessed + " . " + Cache.idToVolume(itemId) + " * " + costPerM3 + " = " + (Cache.idToVolume(itemId) * costPerM3));
-            sumReprocessed = sumReprocessed - costPerM3 * Cache.idToVolume(itemId) + costPerM3 * volumeReprocessed;
-            Debug.print("Post hauling: " + sumReprocessed);
-
-            if (sumReprocessed > itemPrice) {
-                results.put(sumReprocessed - itemPrice, Cache.getItemName(itemId));
-                //System.out.println(Cache.getItemName(itemId) + "," + (sumReprocessed - itemPrice));
-            }
+            int finalStart = start;
+            pool[i] = new Thread(() -> {
+                for (int i1 = finalStart; i1 <= end; i1++) {
+                    try {
+                        System.out.println(i1 + "/" + totalCount);
+                        calculateItemId(system, reprocessing, costPerM3, priceCalculator, preFilteredList.get(i1), resourceToPrice, calcAll, results);
+                    } catch (IOException ignore) {
+                    }
+                }
+            });
+            pool[i].setDaemon(true);
+            pool[i].start();
+            start = end + 1;
+        }
+        for (int i = 0; i < threadCount; i++) {
+            pool[i].join();
         }
 
-        List<String> res = formatResult(results);
-        return res;
+        return formatResult(results);
+    }
+
+    private static void calculateItemId(int system, float reprocessing, float costPerM3, PriceCalculator priceCalculator, Integer itemId, Map<Integer, Double> resourceToPrice, boolean calcAll, Map<Double, String> results) throws IOException {
+        List<Pair<Integer, Double>> val = Cache.getInvTypeMaterials().get(itemId);
+
+        double volumeReprocessed = 0;
+        double sumReprocessed = 0;
+        for (Pair<Integer, Double> reprocessedResult : val) {
+            if (!resourceToPrice.containsKey(reprocessedResult.first()) & !calcAll) continue;
+            double reprocessedValue = priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first(), system)) * reprocessedResult.second() * reprocessing;
+            volumeReprocessed += Cache.idToVolume(reprocessedResult.first()) * reprocessedResult.second();
+            sumReprocessed += reprocessedValue;
+        }
+
+        if (sumReprocessed == 0) return;
+
+        double itemPrice = priceCalculator.calculate(Cache.tycoonMarketValue(itemId, system));
+        if (itemPrice == 0) return;
+
+        Debug.print(itemId);
+        Debug.print("Only item: " + itemPrice);
+        Debug.print("Pre hauling: " + sumReprocessed + " . " + Cache.idToVolume(itemId) + " * " + costPerM3 + " = " + (Cache.idToVolume(itemId) * costPerM3));
+        sumReprocessed = sumReprocessed - costPerM3 * Cache.idToVolume(itemId) + costPerM3 * volumeReprocessed;
+        Debug.print("Post hauling: " + sumReprocessed);
+
+        if (sumReprocessed > itemPrice) {
+            results.put(sumReprocessed - itemPrice, Cache.getItemName(itemId));
+        }
     }
 
     public interface PriceCalculator {

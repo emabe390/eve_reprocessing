@@ -1,3 +1,5 @@
+package emabe.eve.reprocessing;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import jxl.Cell;
@@ -152,7 +154,6 @@ public class Cache {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
 
-            APIResponse apiResponse = null;
             int status = conn.getResponseCode();
             if (status == HttpURLConnection.HTTP_OK) {
                 // Read the response
@@ -178,10 +179,10 @@ public class Cache {
 
         CachedResponse<APIResponse> c = buySellApiCache.get(urlString);
         if (c != null && c.expiresAt != null && c.expiresAt.isAfter(Instant.now())) {
-            Debug.print("API Cache Hit");
+            Debug.print("API emabe.eve.reprocessing.Cache Hit");
             return c.body;
         }
-        Debug.print("API Cache miss");
+        Debug.print("API emabe.eve.reprocessing.Cache miss");
         APIResponse apiResponse = null;
         Instant expiresAt = null;
         URL url = new URL(urlString);
@@ -217,7 +218,7 @@ public class Cache {
         String[] split = url.split("/");
         Path fileName = cacheDir.resolve(split[split.length - 1]);
         if (Files.isRegularFile(fileName)) {
-            Debug.print("Cache hit " + fileName);
+            Debug.print("emabe.eve.reprocessing.Cache hit " + fileName);
             return;
         }
 
