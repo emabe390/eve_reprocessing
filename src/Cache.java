@@ -19,16 +19,16 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Cache {
-    private static Gson gson = new Gson();
-    private static Path cacheDir = Path.of("cache");
-    private static String INV_TYPES = "https://www.fuzzwork.co.uk/dump/latest/invTypes.xls";
-    private static String INV_TYPES_MATERIALS = "https://www.fuzzwork.co.uk/dump/latest/invTypeMaterials.csv";
-    private static String EVE_TYCOON = "https://evetycoon.com/api";
+    private static final Gson gson = new Gson();
+    private static final Path cacheDir = Path.of("cache");
+    private static final String INV_TYPES = "https://www.fuzzwork.co.uk/dump/latest/invTypes.xls";
+    private static final String INV_TYPES_MATERIALS = "https://www.fuzzwork.co.uk/dump/latest/invTypeMaterials.csv";
+    private static final String EVE_TYCOON = "https://evetycoon.com/api";
 
 
     private static Map<String, CachedResponse<APIResponse>> buySellApiCache;
 
-    private static String[] HARD_CACHE = new String[]{INV_TYPES, INV_TYPES_MATERIALS};
+    private static final String[] HARD_CACHE = new String[]{INV_TYPES, INV_TYPES_MATERIALS};
 
     @GuardedBy("this")
     private static Map<Integer, String> idToName;
@@ -40,7 +40,7 @@ public class Cache {
     private static HashMap<Integer, Double> idToRequiredForReprocess;
     @GuardedBy("this")
     private static Map<Integer, List<Pair<Integer, Double>>> idToReprocessed;
-
+    private static final Map<Integer, Map<Integer, ESIPriceData>> marketPriceResp = new HashMap<>();
 
     public static void initialize() throws Exception {
         populate();
@@ -146,48 +146,6 @@ public class Cache {
         return idToVolume.get(itemId);
     }
 
-    private static Map<Integer, Map<Integer, ESIPriceData>> marketPriceResp = new HashMap<>();
-
-    public static class ESIPriceData {
-
-        private double adjusted_price;
-        private double average_price;
-        private int type_id;
-
-        @Override
-        public String toString() {
-            return type_id + " : " + average_price + " , " + adjusted_price;
-        }
-
-        // Default constructor required
-        public ESIPriceData() {}
-
-        // Getters and setters
-        public double getAdjusted_price() {
-            return adjusted_price;
-        }
-
-        public void setAdjusted_price(double adjusted_price) {
-            this.adjusted_price = adjusted_price;
-        }
-
-        public double getAverage_price() {
-            return average_price;
-        }
-
-        public void setAverage_price(double average_price) {
-            this.average_price = average_price;
-        }
-
-        public int getType_id() {
-            return type_id;
-        }
-
-        public void setType_id(int type_id) {
-            this.type_id = type_id;
-        }
-    }
-
     public static ESIPriceData ESImarketValue(int typeId, int regionId) throws IOException {
         if (!marketPriceResp.containsKey(regionId)) {
             URL url = new URL("https://esi.evetech.net/markets/prices");
@@ -203,7 +161,7 @@ public class Cache {
                     ObjectMapper mapper = new ObjectMapper();
 
                     Map<Integer, ESIPriceData> data = new HashMap<>();
-                    for (ESIPriceData priceData: mapper.readValue(body, ESIPriceData[].class)) {
+                    for (ESIPriceData priceData : mapper.readValue(body, ESIPriceData[].class)) {
                         data.put(priceData.type_id, priceData);
                     }
                     marketPriceResp.put(regionId, data);
@@ -274,6 +232,47 @@ public class Cache {
             }
         } catch (IOException e) {
             // handle exception
+        }
+    }
+
+    public static class ESIPriceData {
+
+        private double adjusted_price;
+        private double average_price;
+        private int type_id;
+
+        // Default constructor required
+        public ESIPriceData() {
+        }
+
+        @Override
+        public String toString() {
+            return type_id + " : " + average_price + " , " + adjusted_price;
+        }
+
+        // Getters and setters
+        public double getAdjusted_price() {
+            return adjusted_price;
+        }
+
+        public void setAdjusted_price(double adjusted_price) {
+            this.adjusted_price = adjusted_price;
+        }
+
+        public double getAverage_price() {
+            return average_price;
+        }
+
+        public void setAverage_price(double average_price) {
+            this.average_price = average_price;
+        }
+
+        public int getType_id() {
+            return type_id;
+        }
+
+        public void setType_id(int type_id) {
+            this.type_id = type_id;
         }
     }
 

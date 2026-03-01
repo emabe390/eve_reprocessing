@@ -3,74 +3,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 public class SimpleSolver {
-    private abstract static class SimplePriceCalculator implements PriceCalculator {
-        @Override
-        public double calculate(Cache.ESIPriceData response) {
-            if (response == null) {
-                return 0;
-            }
-            return response.getAverage_price();
-        }
-    }
-
-    public interface PriceCalculator {
-        double calculate(Cache.APIResponse response);
-
-        double calculate(Cache.ESIPriceData response);
-
-        static PriceCalculator BUY() {
-            return new SimplePriceCalculator() {
-                @Override
-                public double calculate(Cache.APIResponse response) {
-                    if (response.buyOrders == 0) return 0;
-                    if (response.sellOrders == 0) return 0;
-                    if (response.buyVolume < 100) return 0;
-                    if (response.sellVolume < 100) return 0;
-                    return response.buyAvgFivePercent;
-                }
-            };
-        }
-
-        static PriceCalculator MAX_BUY() {
-            return new SimplePriceCalculator() {
-                @Override
-                public double calculate(Cache.APIResponse response) {
-                    if (response.buyOrders == 0) return 0;
-                    if (response.sellOrders == 0) return 0;
-                    if (response.buyVolume < 100) return 0;
-                    if (response.sellVolume < 100) return 0;
-                    return response.maxBuy;
-                }
-            };
-        }
-
-        static PriceCalculator SELL() {
-            return new SimplePriceCalculator() {
-                @Override
-                public double calculate(Cache.APIResponse response) {
-                    if (response.buyOrders == 0) return 0;
-                    if (response.sellOrders == 0) return 0;
-                    if (response.buyVolume < 100) return 0;
-                    if (response.sellVolume < 100) return 0;
-                    return response.sellAvgFivePercent;
-                }
-            };
-        }
-
-        static PriceCalculator MIN_SELL() {
-            return new SimplePriceCalculator() {
-                @Override
-                public double calculate(Cache.APIResponse response) {
-                    if (response.buyOrders == 0) return 0;
-                    if (response.sellOrders == 0) return 0;
-                    if (response.buyVolume < 100) return 0;
-                    if (response.sellVolume < 100) return 0;
-                    return response.minSell;
-                }
-            };
-        }
-    }
-
     static void main() throws Exception {
         Cache.initialize();
         try {
@@ -90,6 +22,31 @@ public class SimpleSolver {
 
     }
 
+    private static List<String> formatResult(HashMap<Double, String> results) {
+        List<String> res = new ArrayList<>();
+        // if (res.isEmpty()) return res;
+
+        res.add("+ Reprocess " + LocalDate.now() + "\n");
+        Object[] resultArray = results.keySet().stream().sorted().toArray();
+        int len = (int) Math.floor(Math.log((Double) resultArray[resultArray.length - 1])) / 2;
+        boolean first = true;
+        int lastBlock = 0;
+        int blockSize = 10000;
+        for (Object okey : resultArray) {
+            Double key = (Double) okey;
+            if ((int) (key / blockSize) > lastBlock) {
+                lastBlock = (int) (key / blockSize);
+                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", lastBlock * blockSize, ((lastBlock + 1) * blockSize - 1)));
+            }
+            if (lastBlock == 0 && first) {
+                first = false;
+                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", 0, blockSize - 1));
+            }
+
+            res.add("-- " + results.get(key) + "\n");
+        }
+        return res;
+    }
 
     private List<Integer> preSolve(List<Integer> resources, int system, float reprocessing, float costPerM3, PriceCalculator priceCalculator) throws IOException {
         System.out.println("system = " + system);
@@ -127,11 +84,11 @@ public class SimpleSolver {
             double volumeReprocessed = 0;
             double sumReprocessed = 0;
             for (Pair<Integer, Double> reprocessedResult : val) {
-                if (!resourceToPrice.containsKey(reprocessedResult.first) & !calcAll) continue;
-                double reprocessedValue = priceCalculator.calculate(Cache.ESImarketValue(reprocessedResult.first, system)) * reprocessedResult.second * reprocessing;
-                Debug.print(priceCalculator.calculate(Cache.ESImarketValue(reprocessedResult.first, system)) + " * " + reprocessedResult.second + " * " + reprocessing);
-                Debug.print(Cache.getItemName(reprocessedResult.first) + " : " + reprocessedValue);
-                volumeReprocessed += Cache.idToVolume(reprocessedResult.first) * reprocessedResult.second;
+                if (!resourceToPrice.containsKey(reprocessedResult.first()) & !calcAll) continue;
+                double reprocessedValue = priceCalculator.calculate(Cache.ESImarketValue(reprocessedResult.first(), system)) * reprocessedResult.second() * reprocessing;
+                Debug.print(priceCalculator.calculate(Cache.ESImarketValue(reprocessedResult.first(), system)) + " * " + reprocessedResult.second() + " * " + reprocessing);
+                Debug.print(Cache.getItemName(reprocessedResult.first()) + " : " + reprocessedValue);
+                volumeReprocessed += Cache.idToVolume(reprocessedResult.first()) * reprocessedResult.second();
                 sumReprocessed += reprocessedValue;
             }
 
@@ -191,11 +148,11 @@ public class SimpleSolver {
             double volumeReprocessed = 0;
             double sumReprocessed = 0;
             for (Pair<Integer, Double> reprocessedResult : val) {
-                if (!resourceToPrice.containsKey(reprocessedResult.first) & !calcAll) continue;
-                double reprocessedValue = priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first, system)) * reprocessedResult.second * reprocessing;
-               // Debug.print(priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first, system)) + " * " + reprocessedResult.second + " * " + reprocessing);
-               // Debug.print(Cache.getItemName(reprocessedResult.first) + " : " + reprocessedValue);
-                volumeReprocessed += Cache.idToVolume(reprocessedResult.first) * reprocessedResult.second;
+                if (!resourceToPrice.containsKey(reprocessedResult.first()) & !calcAll) continue;
+                double reprocessedValue = priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first(), system)) * reprocessedResult.second() * reprocessing;
+                // Debug.print(priceCalculator.calculate(Cache.tycoonMarketValue(reprocessedResult.first, system)) + " * " + reprocessedResult.second + " * " + reprocessing);
+                // Debug.print(Cache.getItemName(reprocessedResult.first) + " : " + reprocessedValue);
+                volumeReprocessed += Cache.idToVolume(reprocessedResult.first()) * reprocessedResult.second();
                 sumReprocessed += reprocessedValue;
             }
 
@@ -220,27 +177,71 @@ public class SimpleSolver {
         return res;
     }
 
-    private static List<String> formatResult(HashMap<Double, String> results) {
-        List<String> res = new ArrayList<>();
-        // if (res.isEmpty()) return res;
-
-        res.add("+ Reprocess " + LocalDate.now() + "\n");
-        int len = (int) Math.floor(Math.log(results.keySet().stream().sorted().toList().getLast())) / 2;
-        boolean first = true;
-        int lastBlock = 0;
-        int blockSize = 10000;
-        for (Double key : results.keySet().stream().sorted().toList()) {
-            if ((int) (key / blockSize) > lastBlock) {
-                lastBlock = (int) (key / blockSize);
-                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", lastBlock * blockSize, ((lastBlock + 1) * blockSize - 1)));
-            }
-            if (lastBlock == 0 && first) {
-                first = false;
-                res.add(String.format("++ %0" + len + "d-%0" + len + "d%n", 0, blockSize - 1));
-            }
-
-            res.add("-- " + results.get(key) + "\n");
+    public interface PriceCalculator {
+        static PriceCalculator BUY() {
+            return new SimplePriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.buyAvgFivePercent;
+                }
+            };
         }
-        return res;
+
+        static PriceCalculator MAX_BUY() {
+            return new SimplePriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.maxBuy;
+                }
+            };
+        }
+
+        static PriceCalculator SELL() {
+            return new SimplePriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.sellAvgFivePercent;
+                }
+            };
+        }
+
+        static PriceCalculator MIN_SELL() {
+            return new SimplePriceCalculator() {
+                @Override
+                public double calculate(Cache.APIResponse response) {
+                    if (response.buyOrders == 0) return 0;
+                    if (response.sellOrders == 0) return 0;
+                    if (response.buyVolume < 100) return 0;
+                    if (response.sellVolume < 100) return 0;
+                    return response.minSell;
+                }
+            };
+        }
+
+        double calculate(Cache.APIResponse response);
+
+        double calculate(Cache.ESIPriceData response);
+    }
+
+    private abstract static class SimplePriceCalculator implements PriceCalculator {
+        @Override
+        public double calculate(Cache.ESIPriceData response) {
+            if (response == null) {
+                return 0;
+            }
+            return response.getAverage_price();
+        }
     }
 }

@@ -1,21 +1,16 @@
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class GUI {
-    private JLabel _headerLabel;
-    private JTextArea _textArea;
-    private JFormattedTextField _costPerM3;
-    private JFrame _frame;
-    private static Map<String, SimpleSolver.PriceCalculator> PRICE_CALCULATOR_MAP = new HashMap<>();
-    private static Map<String, Integer> SYSTEM_MAP = new HashMap<>();
-    private JComboBox<String> buyOptionDropdown;
-    private JComboBox<String> systemSelectorDropdown;
+    private static final Map<String, SimpleSolver.PriceCalculator> PRICE_CALCULATOR_MAP = new HashMap<>();
+    private static final Map<String, Integer> SYSTEM_MAP = new HashMap<>();
 
     static {
         PRICE_CALCULATOR_MAP.put("Buy 5%", SimpleSolver.PriceCalculator.BUY());
@@ -27,8 +22,14 @@ public class GUI {
         SYSTEM_MAP.put("Hek", 10000030);
     }
 
+    private JLabel _headerLabel;
+    private JTextArea _textArea;
+    private JFormattedTextField _costPerM3;
+    private JFrame _frame;
+    private JComboBox<String> buyOptionDropdown;
+    private JComboBox<String> systemSelectorDropdown;
 
-    static void main() throws Exception {
+    public static void main(String[] ignore) throws Exception {
         try {
             Cache.initialize();
             new GUI().run();
