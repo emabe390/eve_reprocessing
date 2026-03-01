@@ -104,6 +104,7 @@ public class GUI {
         String[] systemChoices = SYSTEM_MAP.keySet().stream().sorted().toList().toArray(new String[0]);
         systemSelectorDropdown = new JComboBox<>(systemChoices);
         buttonPanel.add(systemSelectorDropdown);
+        systemSelectorDropdown.setSelectedIndex(2); // pick the forge, todo: dynamic
 
         // Creating instance of JButton
         JButton clearCacheButton = createButton(buttonPanel, "Clear Cache");
@@ -177,7 +178,7 @@ public class GUI {
         SimpleSolver solver = new SimpleSolver();
 
         StringBuilder sb = new StringBuilder();
-        for (String string : solver.solve(ids, SYSTEM_MAP.get(systemSelectorDropdown.getSelectedItem()), 0.5f, Integer.parseInt(_costPerM3.getText()), PRICE_CALCULATOR_MAP.get(buyOptionDropdown.getSelectedItem()))) {
+        for (String string : solver.solve(ids, SYSTEM_MAP.get(systemSelectorDropdown.getSelectedItem().toString()), 0.5f, Integer.parseInt(_costPerM3.getText()), PRICE_CALCULATOR_MAP.get(buyOptionDropdown.getSelectedItem()))) {
             sb.append(string);
         }
 

@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import jxl.Cell;
 import jxl.Sheet;
@@ -145,11 +146,76 @@ public class Cache {
         return idToVolume.get(itemId);
     }
 
-    public static APIResponse marketValue(int typeId) throws IOException {
-        return marketValue(typeId, 10000002); // The forge
+    private static Map<Integer, Map<Integer, ESIPriceData>> marketPriceResp = new HashMap<>();
+
+    public static class ESIPriceData {
+
+        private double adjusted_price;
+        private double average_price;
+        private int type_id;
+
+        @Override
+        public String toString() {
+            return type_id + " : " + average_price + " , " + adjusted_price;
+        }
+
+        // Default constructor required
+        public ESIPriceData() {}
+
+        // Getters and setters
+        public double getAdjusted_price() {
+            return adjusted_price;
+        }
+
+        public void setAdjusted_price(double adjusted_price) {
+            this.adjusted_price = adjusted_price;
+        }
+
+        public double getAverage_price() {
+            return average_price;
+        }
+
+        public void setAverage_price(double average_price) {
+            this.average_price = average_price;
+        }
+
+        public int getType_id() {
+            return type_id;
+        }
+
+        public void setType_id(int type_id) {
+            this.type_id = type_id;
+        }
     }
 
-    public static APIResponse marketValue(int typeId, int regionId) throws IOException {
+    public static ESIPriceData ESImarketValue(int typeId, int regionId) throws IOException {
+        if (!marketPriceResp.containsKey(regionId)) {
+            URL url = new URL("https://esi.evetech.net/markets/prices");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+
+            APIResponse apiResponse = null;
+            int status = conn.getResponseCode();
+            if (status == HttpURLConnection.HTTP_OK) {
+                // Read the response
+                try (InputStream in = conn.getInputStream()) {
+                    String body = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                    ObjectMapper mapper = new ObjectMapper();
+
+                    Map<Integer, ESIPriceData> data = new HashMap<>();
+                    for (ESIPriceData priceData: mapper.readValue(body, ESIPriceData[].class)) {
+                        data.put(priceData.type_id, priceData);
+                    }
+                    marketPriceResp.put(regionId, data);
+                    Debug.print(body);
+                }
+            }
+        }
+        System.out.println(typeId + " " + regionId + " : " + marketPriceResp.get(regionId).get(typeId));
+        return marketPriceResp.get(regionId).get(typeId);
+    }
+
+    public static APIResponse tycoonMarketValue(int typeId, int regionId) throws IOException {
         String urlString = EVE_TYCOON + "/v1/market/stats/%d/%d".formatted(regionId, typeId);
 
         CachedResponse<APIResponse> c = buySellApiCache.get(urlString);
